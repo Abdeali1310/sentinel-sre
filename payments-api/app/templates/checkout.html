@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Checkout</title>
+    <link rel="stylesheet" href="/static/checkout.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <span class="mark" aria-hidden="true"></span>
+        <span class="wordmark">Sentinel Pay</span>
+      </header>
+
+      <h1>Checkout</h1>
+
+      <section class="card" aria-labelledby="summary">
+        <h2 id="summary" class="sr-only">Order summary</h2>
+
+        <div class="row">
+          <span>Product</span>
+          <span>Sentinel Pro &middot; monthly</span>
+        </div>
+        <div class="row">
+          <span>Quantity</span>
+          <span>1</span>
+        </div>
+        <div class="row total">
+          <span>Total due</span>
+          <span id="amount">{{ symbol }}{{ amount }}</span>
+        </div>
+
+        <button
+          id="pay"
+          type="button"
+          data-amount="{{ amount }}"
+          data-currency="{{ currency }}"
+        >
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="label">Pay now</span>
+        </button>
+
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <div id="receipt" class="receipt" hidden>
+        <p class="receipt-title">Payment successful</p>
+        <p class="receipt-line">Order <strong id="receipt-order"></strong></p>
+        <p class="receipt-line muted">A receipt has been sent to your email.</p>
+      </div>
+
+      <div id="error" class="error-banner" role="alert" hidden>
+        Something went wrong. Please try again.
+      </div>
+
+      <footer class="footnote">
+        Payments are processed securely. You will not be charged twice for the
+        same order.
+      </footer>
+    </main>
+
+    <script src="/static/checkout.js"></script>
+  </body>
+</html>

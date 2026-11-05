@@ -21,7 +21,7 @@ curl.exe http://localhost:8001/metrics | Select-String "payments_http_requests_t
 powershell -File scripts/reset_demo.ps1
 ```
 
-- Checkout page loads and a `$10.00` payment succeeds.
+- Checkout page loads and a `₹10.00` payment succeeds.
 - `#incidents` is private, contains only the operator and `@sre-agent`.
 - Switch Console shows the agent as online.
 - Jira `KAN` transitions include `In Progress` and `Done`.

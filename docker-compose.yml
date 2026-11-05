@@ -1,0 +1,19 @@
+name: sentinel
+
+services:
+  payments-api:
+    build: ./payments-api
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    environment:
+      # Absolute path inside the container, backed by a named volume so the
+      # payment ledger survives a rebuild.
+      DATABASE_URL: sqlite:////srv/data/payments.db
+    volumes:
+      - payments-data:/srv/data
+    restart: unless-stopped
+
+volumes:
+  payments-data:

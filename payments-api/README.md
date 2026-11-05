@@ -14,11 +14,13 @@ The target service in the Sentinel system: a small FastAPI payments API with a c
 | `POST` | `/admin/chaos` | Enable the fault trigger (`X-Chaos-Token`) |
 | `DELETE` | `/admin/chaos` | Disable the fault trigger (`X-Chaos-Token`) |
 
-`POST /payments` accepts `{"amount": 10.00, "currency": "USD"}` and returns the stored payment:
+`POST /payments` accepts `{"amount": 10.00, "currency": "INR"}` and returns the stored payment:
 
 ```json
-{ "order_id": "ORD-1042", "status": "PAID", "amount": 10.00, "currency": "USD", "provider_order_id": "cf_..." }
+{ "order_id": "ORD-1042", "status": "PAID", "amount": 10.00, "currency": "INR", "provider_order_id": "cf_..." }
 ```
+
+The checkout page posts `10.00 INR`: the Cashfree sandbox merchant used for local runs has INR enabled and USD disabled.
 
 Error taxonomy:
 

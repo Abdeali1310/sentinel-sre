@@ -46,8 +46,8 @@ Every terminal state must be announced in the room. Silence is a failure mode.
 
 - **R1.1** FastAPI service with `GET /`, `POST /payments`, `GET /payments/{order_id}`, `GET /healthz`, `GET /metrics`, `POST /admin/chaos`, `DELETE /admin/chaos`.
 - **R1.2** `POST /payments` requires an `Idempotency-Key` header; repeating a key returns the original payment and never creates a second provider order.
-- **R1.3** SQLite table `payments(id, order_id, amount, currency, status, provider_order_id, error, created_at)` with `status ∈ {CREATED, PAID, FAILED}`.
-- **R1.4** Checkout page: amount fixed at `$10.00`, payment summary card, "Pay now" button, pending spinner, green receipt on success, red professional banner ("Something went wrong. Please try again.") on failure. No stack traces, provider names, or error codes in the UI.
+- **R1.3** SQLite table `payments(id, order_id, idempotency_key, amount, currency, status, provider_order_id, error, created_at)` with `status ∈ {CREATED, PAID, FAILED}`; `order_id` and `idempotency_key` are both unique.
+- **R1.4** Checkout page: amount fixed at `₹10.00` (`CHECKOUT_AMOUNT`/`CHECKOUT_CURRENCY` in `app/main.py`, passed to the client via `data-*` attributes), payment summary card, "Pay now" button, pending spinner, green receipt on success, red professional banner ("Something went wrong. Please try again.") on failure. No stack traces, provider names, or error codes in the UI.
 - **R1.5** Error taxonomy: `422` validation, `502` unacceptable upstream response (payment stored `FAILED`), `500` only for genuine unhandled defects.
 - **R1.6** `CASHFREE_MODE` selects `sandbox` or `replay`. No silent fallback: `replay` is an explicit operator choice.
 
