@@ -1,0 +1,11 @@
+# Reviewers. Branch protection on main requires an approving review.
+* @Abdeali1310
+
+# Files the agent must never modify. Review is mandatory; the MCP server also
+# refuses to include any of these paths in a commit it creates.
+/.github/    @Abdeali1310
+/sre-agent/  @Abdeali1310
+/prometheus/ @Abdeali1310
+/alertmanager/ @Abdeali1310
+/alert-relay/  @Abdeali1310
+/docker-compose.yml @Abdeali1310

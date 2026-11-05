@@ -1,0 +1,36 @@
+# Local agent tooling — not part of Sentinel
+.agents/
+.claude/
+.windsurf/
+skills/
+skills-lock.json
+docs/agents/
+/AGENTS.md
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Agent workspace clone (nested repository)
+sre-agent/workspaces/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Data
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
