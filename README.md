@@ -10,7 +10,7 @@ Sentinel is not a chatbot with a runbook. It has hands: it reads logs, queries P
 
 From a clean clone, in about five minutes:
 
-1. **A working checkout** — a real FastAPI payments service wired to Cashfree sandbox, with a `$10.00` checkout page.
+1. **A working checkout** — a real FastAPI payments service wired to Cashfree sandbox, with a `₹10.00` checkout page.
 2. **A fault on demand** — an operator-triggered defect that makes the upstream response shape change and the service return `500`, without affecting any other request.
 3. **The full loop** — Prometheus alert → Alertmanager → Mattermost → agent triage → Jira → PR → human merge → human deploy gate → verified recovery.
 

@@ -17,7 +17,7 @@ Companion to `spec.md`. Each milestone ends in something demonstrable, so a slip
 
 Build: FastAPI skeleton, settings, SQLite layer, `POST /payments` with idempotency, `GET /payments/{order_id}`, `/healthz`, `/metrics`, checkout page + CSS + JS, Dockerfile.
 
-Acceptance: `docker compose up` → checkout page charges `$10.00` against Cashfree sandbox → green receipt → row in SQLite → counter visible at `/metrics`.
+Acceptance: `docker compose up` → checkout page charges `₹10.00` against Cashfree sandbox → green receipt → row in SQLite → counter visible at `/metrics`.
 
 Risk: Cashfree sandbox quirks. Fallback: capture one real sandbox response into `replay` mode, decide deliberately, never silently.
 

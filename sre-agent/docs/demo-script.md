@@ -19,7 +19,7 @@ Target length **2:45**. One take after two clean rehearsals. Screen 1920×1080, 
 
 | Time | On screen | Action | Voiceover |
 |---|---|---|---|
-| 0:00 | Checkout page | Click **Pay now**, show spinner, green receipt `ORD-… paid` | "This is a $10 checkout against Cashfree sandbox. Normal traffic, normal day." |
+| 0:00 | Checkout page | Click **Pay now**, show spinner, green receipt `ORD-… paid` | "This is a ₹10 checkout against Cashfree sandbox. Normal traffic, normal day." |
 | 0:20 | Terminal | Paste chaos `curl` → "fault trigger enabled for 50 requests" | "An operator enables a known-bad upstream condition: the provider starts returning `orderId` instead of `order_id`." |
 | 0:28 | Checkout | Pay again → red banner "Something went wrong" | "The customer sees a failure. The stack trace stays in the logs, where it belongs." |
 | 0:40 | Prometheus → Mattermost | Cut to `#incidents`; alert arrives ~2 min later (trim the wait in editing) | "Prometheus sees the 5xx ratio cross five percent. Alertmanager forwards it, the relay posts it, and it mentions the agent." |
