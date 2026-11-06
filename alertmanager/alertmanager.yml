@@ -1,0 +1,15 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: sentinel-relay
+  group_by: ["alertname"]
+  group_wait: 2s
+  group_interval: 1m
+  repeat_interval: 30m
+
+receivers:
+  - name: sentinel-relay
+    webhook_configs:
+      - url: http://alert-relay:8085/webhook
+        send_resolved: false

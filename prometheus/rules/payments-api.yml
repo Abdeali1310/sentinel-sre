@@ -1,0 +1,20 @@
+groups:
+  - name: payments-api
+    rules:
+      - alert: PaymentsApi5xxSpike
+        # Scoped to the payment path on purpose: /healthz and /metrics carry no
+        # customer signal, and Prometheus's own scrape traffic would otherwise
+        # dominate the denominator and mask a total checkout outage.
+        expr: |
+          (
+            sum(rate(payments_http_requests_total{path="/payments",status_code=~"5.."}[5m]))
+            /
+            sum(rate(payments_http_requests_total{path="/payments"}[5m]))
+          ) > 0.05
+        for: 5s
+        labels:
+          severity: critical
+          service: payments-api
+        annotations:
+          summary: "Payments API 5xx ratio above 5%"
+          description: "5xx ratio is {{ $value | humanizePercentage }} over the last 5 minutes (threshold 5%)."
