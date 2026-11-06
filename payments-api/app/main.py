@@ -41,6 +41,7 @@ class PaymentOut(BaseModel):
     amount: float
     currency: str
     provider_order_id: str | None = None
+    error: str | None = None
 
 
 class ChaosRequest(BaseModel):
@@ -122,8 +123,15 @@ async def create_payment(
         db.mark_failed(settings.database_url, order_id, "upstream_unavailable")
         return _upstream_failure(order_id, "upstream_unavailable")
 
-    confirmed_order_id = raw["order_id"]
-    provider_order_id = raw["cf_order_id"]
+    try:
+        confirmed_order_id = raw["order_id"]
+        provider_order_id = raw["cf_order_id"]
+    except KeyError as exc:
+        # The provider's payload is untrusted input. A missing field is a 502
+        # ("upstream said something we cannot accept"), never an unhandled 500.
+        logger.warning("provider_contract order_id=%s missing=%s", order_id, exc)
+        db.mark_failed(settings.database_url, order_id, "upstream_contract")
+        return _upstream_failure(order_id, "upstream_contract")
 
     db.mark_paid(settings.database_url, order_id, provider_order_id)
     return PaymentOut(
@@ -176,6 +184,7 @@ def _to_payment_out(row: dict) -> PaymentOut:
         amount=row["amount"],
         currency=row["currency"],
         provider_order_id=row["provider_order_id"],
+        error=row["error"],
     )
 
 
