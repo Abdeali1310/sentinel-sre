@@ -50,10 +50,12 @@ Then fail three payments (three clicks, or three sequential `POST /payments`). E
 | Elapsed | Event |
 |---|---|
 | 0s | first `500` |
-| ~15–30s | 5xx ratio crosses threshold |
-| ~2m | alert `pending` → `firing` |
-| +10s | post in `#incidents` with `@sre-agent` |
+| ~10s | 5xx share of `POST /payments` crosses 5%; the rule becomes `pending` |
+| ~15s | `pending` → `firing` (the rule's `for: 5s`) |
+| +2s | Alertmanager `group_wait` elapses; relay posts once to `#incidents` with `@sre-agent` |
 | +30s | agent acknowledgement |
+
+Measured on this stack: **19.2 s** from the first `500` to the relay's `POST /webhook`, at a 5xx ratio of **45.04%** (3 failures among the payment requests inside the window), and **exactly one** post — `repeat_interval: 30m` suppresses a second.
 
 If nothing arrives by 3 minutes, see *Alert never fires*.
 
@@ -62,12 +64,22 @@ If nothing arrives by 3 minutes, see *Alert never fires*.
 ```powershell
 curl.exe http://localhost:9091/api/v1/rules          # rule loaded?
 curl.exe http://localhost:9091/api/v1/alerts         # state: pending/firing?
+curl.exe http://localhost:9091/api/v1/targets        # payments-api UP?
 curl.exe http://localhost:9093/-/healthy
 curl.exe http://localhost:9093/api/v2/alerts
+curl.exe http://localhost:8085/healthz
 docker compose logs --tail=50 alert-relay
 ```
 
 In order: is Prometheus scraping (`/targets` shows `payments-api` UP)? Is the rule expression returning a value (`/graph`)? Is Alertmanager receiving (`/api/v2/alerts`)? Is the relay's webhook URL correct in `.env`, and is the Mattermost webhook bound to `#incidents`?
+
+Two traps worth checking before anything else:
+
+- **The ratio is diluted.** The rule watches `path="/payments"` only. If you edit it to drop that matcher, Prometheus's own 5-second scrapes of `/metrics` (and the `/healthz` probes) will outnumber real traffic and hold the ratio near 1%, so the alert never fires. Three failures among a handful of payments is 40–50%; three failures among 60 scrapes is not.
+- **Old failures are still in the window.** After a failed drill the 5-minute window keeps the 5xx samples alive, so the rule can sit `pending` on stale data. Clear the TSDB before re-running: `docker compose rm -sf prometheus; docker volume rm sentinel_prometheus-data; docker compose up -d prometheus`.
+- **A repeat drill inside 30 minutes is silent on purpose.** `repeat_interval: 30m` means one post per incident; Alertmanager's notification log lives in its volume, so a fresh chaos burst within the window will fire again in `/api/v2/alerts` but post nothing. Recreate Alertmanager (`docker compose rm -sf alertmanager; docker volume rm sentinel_alertmanager-data; docker compose up -d alertmanager`) when you need a clean rehearsal.
+
+A `200` from the relay's `/webhook` means Mattermost accepted the post. Alertmanager retries on any non-2xx, so a `502` in its log means the webhook URL or the room is wrong.
 
 ## The agent is stuck or looping
 

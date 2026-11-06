@@ -54,8 +54,8 @@ Every terminal state must be announced in the room. Silence is a failure mode.
 ### R2 — Detection
 
 - **R2.1** Expose `payments_http_requests_total{method,path,status_code}` and `payments_request_duration_seconds` histogram.
-- **R2.2** Alert `PaymentsApi5xxSpike` fires when the 5xx ratio over 5 minutes exceeds `5%` for `2m`.
-- **R2.3** Alertmanager: `group_wait: 10s`, `group_interval: 1m`, `repeat_interval: 30m`, single webhook receiver.
+- **R2.2** Alert `PaymentsApi5xxSpike` fires when the 5xx share of `POST /payments` requests over 5 minutes exceeds `5%` for `5s`.
+- **R2.3** Alertmanager: `group_wait: 2s`, `group_interval: 1m`, `repeat_interval: 30m`, single webhook receiver.
 - **R2.4** alert-relay formats the alert with severity, current value, fingerprint, runbook URL, and the literal mention `@sre-agent`, then posts to `#incidents`.
 - **R2.5** The alert payload carries a stable fingerprint so duplicate alerts are recognisable.
 

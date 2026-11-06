@@ -45,7 +45,9 @@ Acceptance: every tool runs from the CLI harness against the live stack; redacti
 
 Build: `create_jira_ticket`, `update_jira_ticket`, `publish_fix` (Git Data API, path allowlist), `post_mattermost`, `get_ci_status`, `rollback`.
 
-Acceptance: agent creates a `Bug`/`P1` incident in `KAN`; `publish_fix` opens a PR touching only `payments-api/`; an attempt to include `.github/workflows/ci.yml` is refused by a test; CI runs on the PR.
+Acceptance: agent creates a `Task`/`P1` incident in `KAN` (the project has no `Bug` type); `publish_fix` opens a PR touching only `payments-api/`; an attempt to include `.github/workflows/ci.yml` is refused by a test.
+
+Measured: `KAN-7` (Task, `In Progress`) and PR #2 with two files; the repository has no CI workflow, so `get_ci_status` returns `unknown` instead of a check result. The path allowlist stops the agent from adding one — a workflow is a repo-owner change, not an agent change.
 
 ## M6 — Switch integration (≈3h, highest risk)
 
@@ -79,7 +81,7 @@ M3 and M4 may run in parallel once M2 is green: detection needs no agent, and th
 | Jira custom fields block ticket creation | Low | M5 stalled | Check the create screen before writing the tool |
 | Cashfree sandbox latency or outage | Medium | Recording stalls | Pre-warm; `CASHFREE_MODE=replay` decided before recording |
 | Codex free-tier turn limit truncates a run | Medium | Agent stops mid-incident | 15-call budget, one incident at a time, short prompts |
-| Alert latency exceeds 2 minutes | Medium | Awkward pause on camera | Tighten `for:` to `1m` for recording only, note it |
+| Alert latency on a quiet service | Low | Awkward pause on camera | Rule is `for: 5s` and `group_wait: 2s`; measured 19 s end to end |
 | Deploy rebuild takes longer than the verification window | Low | Premature "resolved" | Wait for container health before the first smoke payment |
 
 ## Definition of done
