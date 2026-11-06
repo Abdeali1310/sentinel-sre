@@ -15,5 +15,49 @@ services:
       - payments-data:/srv/data
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=2d
+    depends_on:
+      - payments-api
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    restart: unless-stopped
+
+  alert-relay:
+    build: ./alert-relay
+    ports:
+      - "8085:8085"
+    env_file:
+      - .env
+    # The Mattermost webhook points at the host's loopback; inside the container
+    # that address is host.docker.internal. The relay rewrites it at startup.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - alertmanager
+    restart: unless-stopped
+
 volumes:
   payments-data:
+  prometheus-data:
+  alertmanager-data:
