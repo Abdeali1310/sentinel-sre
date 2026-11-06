@@ -1,19 +1,12 @@
 """Upstream response contract.
 
 The provider's payload is untrusted input. This module pins the behaviour we
-*require* when it stops matching what we expect — and currently records the
-fact that we do not have it yet.
+require when it stops matching what we expect.
 """
 
 import json
 
-import pytest
 
-
-@pytest.mark.xfail(
-    strict=True,
-    reason="known defect: upstream response shape is not validated (500 instead of 502)",
-)
 def test_malformed_upstream_response_returns_502_and_marks_payment_failed(client, enable_chaos):
     """A camelCase provider payload must be rejected at the boundary.
 
@@ -46,10 +39,6 @@ def test_malformed_upstream_response_returns_502_and_marks_payment_failed(client
     assert stored.json()["error"] == "upstream_contract"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="known defect: upstream response shape is not validated (500 instead of 502)",
-)
 def test_malformed_upstream_does_not_leak_provider_internals(client, enable_chaos):
     """The customer-facing body carries an order id and nothing else."""
     enable_chaos(requests=10, ttl_seconds=600)
