@@ -78,7 +78,7 @@ Every terminal state must be announced in the room. Silence is a failure mode.
 ### R5 — Deployment
 
 - **R5.1** Deployment is human-gated: the operator types an instruction in the room.
-- **R5.2** `deploy_locally` runs a fixed script with no arguments: `git -C <target-checkout> pull --ff-only`, assert `HEAD == origin/main`, then `docker compose up -d --build`.
+- **R5.2** `deploy_locally` runs `scripts/deploy.ps1` from the target checkout with a fixed argv: `git pull --ff-only`, assert `HEAD == origin/main`, then `docker compose up -d --build`.
 - **R5.3** If the assertion fails (diverged checkout, dirty tree), the deploy refuses and the agent reports why.
 
 ### R6 — Verification and closure

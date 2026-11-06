@@ -27,6 +27,7 @@ TOOLS = {
     "update_jira_ticket",
     "publish_fix",
     "rollback",
+    "deploy_locally",
     "get_ci_status",
     "post_mattermost",
 }

@@ -93,6 +93,12 @@ def rollback(pr_number: int, reason: str = "", requested_by: str = "") -> dict:
 
 
 @mcp.tool()
+def deploy_locally(requested_by: str = "") -> dict:
+    """Rebuild the local stack from a clean `main`. Only on an operator instruction."""
+    return tools.deploy_locally(requested_by)
+
+
+@mcp.tool()
 def get_ci_status(ref: str) -> dict:
     """CI state and check runs for a branch or commit."""
     return tools.get_ci_status(ref)

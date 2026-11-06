@@ -55,6 +55,10 @@ Build: `agent.template.yaml` (persona, provider `codex`, `directory`, `addressin
 
 Acceptance: alert mention wakes the agent; four milestone messages appear; `@sre-agent deploy` triggers `scripts/deploy.ps1`; verification numbers are quoted; Jira reaches `Done`.
 
+Built: `agent.template.yaml` in the version-2 language (agent resource, `params`, `addressing: anyone`, `auto_mode: true`) and `AGENT.md` beside it, which the Console injects as the agent's instructions; `scripts/deploy.ps1` (argument-free, exit codes 1–6, refuses a dirty or diverged checkout before Docker runs) and `deploy_locally` as its only caller; `CONTRIBUTING.md` carries the Console binding steps.
+
+Measured: the deploy script refuses the working tree with 9 uncommitted paths and never reaches `docker compose`; four refusal paths are covered by `tests/test_deploy_script.py` against throwaway repositories. The Switch Console control API on port 49721 authenticates with `x-switch-control-token` and exposes `/agents` reads plus session create/delete only — there is no route that writes an agent definition, so creating the agent and binding the room stay Console UI steps.
+
 Risk: Switch/Mattermost provisioning details. Mitigation: start this milestone the moment M4 is green, not after M5 is polished.
 
 ## M7 — Hardening, docs, recording (≈4h)
@@ -101,6 +105,7 @@ docker compose ps
 curl.exe http://localhost:8001/healthz
 curl.exe http://localhost:9091/-/healthy
 curl.exe http://localhost:9093/-/healthy
-uv run --project sre-agent/mcp pytest -q sre-agent/mcp/tests
-docker compose exec payments-api pytest -q
+cd payments-api; .\.venv\Scripts\python.exe -m pytest -q
+cd ..\sre-agent; ..\payments-api\.venv\Scripts\python.exe -m pytest -q
+cd ..\alert-relay; ..\payments-api\.venv\Scripts\python.exe -m pytest -q
 ```

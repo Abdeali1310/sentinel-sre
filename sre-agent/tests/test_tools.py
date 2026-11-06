@@ -12,15 +12,18 @@ SECRET = "ghp_9f3c2b1a4d5e6f708192a3b4c5d6e7f80912"
 
 
 class FakeRunner:
-    def __init__(self, stdout: str = "", returncode: int = 0) -> None:
+    def __init__(self, stdout: str = "", returncode: int = 0, stderr: str = "") -> None:
         self.stdout = stdout
         self.returncode = returncode
+        self.stderr = stderr
         self.calls: list[tuple[list[str], str | None]] = []
 
     def __call__(self, argv, cwd=None, timeout=None):
         self.calls.append((list(argv), str(cwd) if cwd else None))
         return type(
-            "Done", (), {"stdout": self.stdout, "stderr": "", "returncode": self.returncode}
+            "Done",
+            (),
+            {"stdout": self.stdout, "stderr": self.stderr, "returncode": self.returncode},
         )()
 
 
@@ -209,3 +212,39 @@ def test_run_tests_reports_failure_with_the_output(tmp_path):
 
     assert result["ok"] is False
     assert "1 failed" in result["output"]
+
+
+def test_deploy_locally_runs_the_fixed_script_with_no_model_arguments(tmp_path):
+    script = tmp_path / "scripts" / "deploy.ps1"
+    script.parent.mkdir()
+    script.write_text("# deploy\n", encoding="utf-8")
+    runner = FakeRunner(stdout="deployed abc123, healthz ok after 8s\n")
+
+    result = make_tools(tmp_path, runner=runner).deploy_locally(requested_by="Abdeali")
+
+    argv, cwd = runner.calls[0]
+    assert argv[0] == "powershell"
+    assert argv[-2:] == ["-File", str(script)]
+    assert cwd == str(tmp_path)
+    assert result == {
+        "ok": True,
+        "exit_code": 0,
+        "output": "deployed abc123, healthz ok after 8s",
+    }
+
+
+def test_deploy_locally_reports_a_refusal_instead_of_raising(tmp_path):
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "deploy.ps1").write_text("# deploy\n", encoding="utf-8")
+    runner = FakeRunner(stderr="refusing to deploy: 3 uncommitted path(s)\n", returncode=2)
+
+    result = make_tools(tmp_path, runner=runner).deploy_locally()
+
+    assert result["ok"] is False
+    assert result["exit_code"] == 2
+    assert "uncommitted" in result["output"]
+
+
+def test_deploy_locally_refuses_when_the_script_is_missing(tmp_path):
+    with pytest.raises(ToolError, match="deploy.ps1"):
+        make_tools(tmp_path).deploy_locally()

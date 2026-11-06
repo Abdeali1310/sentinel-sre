@@ -29,7 +29,7 @@ Target length **2:45**. One take after two clean rehearsals. Screen 1920×1080, 
 | 1:35 | Mattermost + Jira | Ticket `KAN-…` created; milestone 3 — PR link | "The ticket is diagnostic, not a copy of the alert. Then a branch, a regression test, and a pull request." |
 | 1:50 | GitHub PR | Scroll the diff: model validation where the dict index used to be; test file added | "The fix is a real change with a test that fails on the old code. The agent cannot merge this — that is my job." |
 | 2:00 | GitHub + Mattermost | Click **Merge**; type in chat: `@sre-agent the PR is merged. Deploy and verify.` | "I merge, then I pass the deploy gate myself." |
-| 2:10 | Terminal | `docker compose up -d --build` rebuild (sped up) | "The agent deploys the merged commit locally, and the rebuilt container clears the fault state — a clean slate to measure against." |
+| 2:10 | Mattermost | `deploy_locally` output: the built commit sha, then `healthz ok after Ns` | "The agent deploys the merged commit locally, and the rebuilt container clears the fault state — a clean slate to measure against." |
 | 2:20 | Mattermost | Milestone 4 — measured before → after error ratio, "10/10 smoke payments passed" + Jira `Done` | "It checks metrics and smoke payments, not the PR status. Then it closes the ticket and reports the number that matters." |
 | 2:35 | Architecture slide | Static image of the loop | "Alert, diagnose, fix, review, deploy, verify. The agent does the work; the human keeps the keys." |
 

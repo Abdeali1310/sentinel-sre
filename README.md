@@ -47,7 +47,7 @@ No mocks in the path that matters. No hidden state in the fault trigger.
                                                      │  @sre-agent
                                                      ▼
                                          Switch Console → Codex
-                                                     │  MCP (13 tools)
+                                                     │  MCP (14 tools)
                                                      ▼
                               logs · metrics · SQLite · files · tests
                                                      │
@@ -135,15 +135,15 @@ cd sre-agent
 
 `python server.py` speaks MCP over stdio with the same tool set.
 
-Thirteen tools, each registered in `server.py` and reachable from `cli.py`:
+Fourteen tools, each registered in `server.py` and reachable from `cli.py`:
 
 | Class | Tools |
 |---|---|
 | Read | `health_check`, `fetch_logs`, `query_prometheus`, `get_payment`, `read_file`, `search_code`, `run_tests` |
-| Write | `create_jira_ticket`, `update_jira_ticket`, `publish_fix`, `rollback`, `post_mattermost` |
+| Write | `create_jira_ticket`, `update_jira_ticket`, `publish_fix`, `rollback`, `deploy_locally`, `post_mattermost` |
 | Verify | `get_ci_status` |
 
-`publish_fix` commits through the GitHub Git Data API — never `git push` — and refuses any path outside `payments-api/app/` and `payments-api/tests/`. `rollback` opens a revert PR; it does not close anything itself. Both stop at the merge gate.
+`publish_fix` commits through the GitHub Git Data API — never `git push` — and refuses any path outside `payments-api/app/` and `payments-api/tests/`. `rollback` opens a revert PR; it does not close anything itself. Both stop at the merge gate. `deploy_locally` takes no arguments: it runs `scripts/deploy.ps1`, which refuses a dirty or diverged checkout before it reaches Docker.
 
 ---
 
@@ -152,7 +152,7 @@ Thirteen tools, each registered in `server.py` and reachable from `cli.py`:
 ```
 sentinel-sre/
 ├── payments-api/        # the target application (FastAPI, checkout UI, SQLite, Dockerfile)
-├── sre-agent/           # the agent workspace (MCP tools, prompts, policy, docs)
+├── sre-agent/           # the agent workspace (MCP tools, policy, docs)
 ├── alert-relay/         # Alertmanager webhook → Mattermost translator
 ├── prometheus/          # scrape config + alert rules
 ├── alertmanager/        # routing, grouping, webhook receiver
@@ -168,6 +168,7 @@ sentinel-sre/
 | Product spec | `sre-agent/spec.md` |
 | Build plan and milestones | `sre-agent/plan.md` |
 | Agent policy (tools, limits, hard rules) | `sre-agent/AGENTS.md` |
+| Switch template and agent instructions | `sre-agent/agent.template.yaml`, `sre-agent/AGENT.md` |
 | Operator runbook | `sre-agent/docs/runbook.md` |
 | Demo script | `sre-agent/docs/demo-script.md` |
 | Coding standards | `sre-agent/docs/coding-standards.md` |

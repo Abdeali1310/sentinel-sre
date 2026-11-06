@@ -92,11 +92,16 @@ Hard limits are enforced in the MCP server (15 tool calls, 10 minutes) and at th
 
 ## Deploy refuses
 
-`scripts/deploy.ps1` fails when the target checkout is not exactly `origin/main`:
+`scripts/deploy.ps1` refuses anything it cannot vouch for, before it reaches Docker. The exit code names the reason:
 
-```
-DEPLOY REFUSED: HEAD is not origin/main (expected <sha>, found <sha>)
-```
+| Code | Message on stderr | What to do |
+|---|---|---|
+| 1 | `not a Sentinel checkout` | Run it from the repository root, next to `docker-compose.yml`. |
+| 2 | `refusing to deploy: N uncommitted path(s)` | Commit or stash. The agent's own PR is merged, so the tree should be clean. |
+| 3 | `refusing to deploy: git pull --ff-only failed` | Diverged or no upstream: `git fetch origin`, `git status`, `git log --oneline -3`. |
+| 4 | `refusing to deploy: HEAD <sha> is not origin/main <sha>` | A local commit never reached GitHub. Push it through review, or reset to `origin/main`. |
+| 5 | `docker compose up failed` | Read the build output. Usually a syntax error the tests did not cover. |
+| 6 | `healthz did not answer within 120 s` | `docker compose ps` and `docker compose logs payments-api`. The build succeeded; the process did not. |
 
 That is the guard working. Investigate before overriding:
 

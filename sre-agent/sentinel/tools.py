@@ -25,6 +25,7 @@ logger = logging.getLogger("sentinel.tools")
 
 REQUEST_TIMEOUT_SECONDS = 15
 COMMAND_TIMEOUT_SECONDS = 300
+DEPLOY_TIMEOUT_SECONDS = 600
 MAX_SEARCH_MATCHES = 50
 MAX_SERIES = 50
 MAX_TEST_OUTPUT_CHARS = 4_000
@@ -293,6 +294,30 @@ class Tools:
         self._claim("rollback", write=True)
         self._require_operator(requested_by, "rollback")
         return self.github.rollback(int(pr_number), reason)
+
+    def deploy_locally(self, requested_by: str = "") -> dict:
+        """R5.2: rebuild the stack from a clean `main`. Fixed argv, no arguments."""
+        self._claim("deploy_locally", write=True)
+        self._require_operator(requested_by, "deploy_locally")
+        script = self.repo / "scripts" / "deploy.ps1"
+        if not script.is_file():
+            raise ToolError(f"{script} is missing")
+        argv = [
+            "powershell",
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(script),
+        ]
+        completed = self.runner(argv, cwd=str(self.repo), timeout=DEPLOY_TIMEOUT_SECONDS)
+        output = (completed.stdout or "") + (completed.stderr or "")
+        return {
+            "ok": completed.returncode == 0,
+            "exit_code": completed.returncode,
+            "output": self._clean(output[-MAX_TEST_OUTPUT_CHARS:]).strip(),
+        }
 
     def get_ci_status(self, ref: str) -> dict:
         """Workflow conclusions for a branch or commit."""
