@@ -23,7 +23,7 @@ Working directory: this folder. The application source lives in `workspaces/sent
 | Data | `get_payment` |
 | Code | `read_file`, `search_code`, `run_tests` |
 | Record | `create_jira_ticket`, `update_jira_ticket` |
-| Change | `publish_fix`, `rollback` |
+| Change | `publish_fix`, `rollback`, `deploy_locally` |
 | Verify | `get_ci_status` |
 | Report | `post_mattermost` |
 

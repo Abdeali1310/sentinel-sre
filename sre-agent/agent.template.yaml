@@ -1,0 +1,42 @@
+# Sentinel — Switch agent template (version 2).
+#
+# Open Switch Console's Templates page and read this file there. The Console
+# builds one form from `params:`; pick the `sre-agent` folder of your checkout,
+# and it creates the agent with the instructions in `AGENT.md` beside this file.
+#
+# Version 2 is the shape a server with agent management reads. A server without
+# it takes version 1 only (`agent:` + `room:` + a top-level `kickoff:`), which is
+# why the two must not be mixed.
+#
+# Two things this template cannot do, because only the Console can: bind the
+# agent to the existing Mattermost `#incidents` room, and set its handle. Do both
+# on the agent's page after it exists, then connect the bridge.
+
+version: 2
+
+params:
+  workspace:
+    type: directory
+    label: Sentinel policy folder
+    description: The sre-agent folder of your sentinel-sre checkout. AGENT.md and AGENTS.md live there.
+    required: true
+
+resources:
+  sre_agent:
+    type: agent
+    name: sre-agent
+    display_name: Sentinel
+    description: >-
+      Diagnoses payments incidents, prepares a reviewed fix, and verifies
+      recovery after a human merges and deploys.
+    provider: codex
+    directory: "{workspace}"
+    isolation: shared
+    # No auto-approval: `deploy_locally` rebuilds the stack, so every write stays
+    # behind an operator instruction. `auto_mode` lets an alert mention wake it.
+    auto_approve: false
+    auto_mode: true
+    addressing: anyone
+    sources:
+      - { label: Runbook, url: https://github.com/Abdeali1310/sentinel-sre/blob/main/sre-agent/docs/runbook.md }
+      - { label: Agent policy, url: https://github.com/Abdeali1310/sentinel-sre/blob/main/sre-agent/AGENTS.md }

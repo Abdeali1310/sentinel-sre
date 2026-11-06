@@ -26,21 +26,32 @@ curl.exe http://localhost:9093/-/healthy
 Agent setup:
 
 ```powershell
-powershell -File scripts/setup_workspace.ps1     # clone of this repo into sre-agent/workspaces/
-codex mcp add sre-tools -- uv run --project sre-agent/mcp python -m mcp.server
+git clone https://github.com/Abdeali1310/sentinel-sre.git sre-agent/workspaces/sentinel-sre
+uv pip install --python payments-api/.venv/Scripts/python.exe -r sre-agent/requirements.txt
+$python = Resolve-Path payments-api/.venv/Scripts/python.exe
+$server = Resolve-Path sre-agent/server.py
+codex mcp add sre-tools -- $python $server
 codex mcp list
 ```
 
-Then import `sre-agent/agent.template.yaml` in Switch Console and connect the Mattermost bridge.
+Then add the agent from `sre-agent/agent.template.yaml` in Switch Console:
+
+1. Templates → read `sre-agent/agent.template.yaml`. The form asks for one thing: the policy folder. Pick this checkout's `sre-agent/` directory. The file is version 2, which needs a server with agent management; a server without it takes the version-1 shape instead.
+2. On the new agent, set the handle `sre-agent` (display name `Sentinel`), `codex`, `auto_approve` off, `auto_mode` on.
+3. Add it to the existing private `#incidents` room with addressing `anyone`, so an alert mention wakes it, then connect the Mattermost bridge for that room.
+4. Send a test mention. The agent's first call is `health_check`; if the room stays silent, the bridge or the mention is the problem, not the tools.
+
+`scripts/deploy.ps1` is what `deploy_locally` runs. It takes no arguments and refuses a dirty or diverged checkout, so run it yourself from the repository root to prove the deploy path without the agent.
 
 ## Running tests
 
 ```powershell
-docker compose exec payments-api pytest -q
-uv run --project sre-agent/mcp pytest -q
+cd payments-api   ; .\.venv\Scripts\python.exe -m pytest -q
+cd ../sre-agent   ; ..\payments-api\.venv\Scripts\python.exe -m pytest -q
+cd ../alert-relay ; ..\payments-api\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Both suites must pass before a pull request. CI runs them on every PR.
+Both suites must pass before a pull request. CI runs the `payments-api` suite and `ruff` on every PR.
 
 ## Branch and commit conventions
 
@@ -64,14 +75,14 @@ PRs created by the agent open with a disclaimer line and require the same review
 
 Adding a tool:
 
-1. Add a module under `sre-agent/mcp/tools/` with a typed signature and a docstring the model can read.
-2. Register it in `sre-agent/mcp/server.py`.
-3. Add a test to `sre-agent/mcp/tests/`.
-4. If it writes, update the budget classification in `budget.py` and the table in `AGENTS.md`.
+1. Add a method to `sre-agent/sentinel/tools.py` with a typed signature and a docstring the model can read.
+2. Register it in `sre-agent/server.py` and add its name to `TOOLS` in `sre-agent/cli.py`.
+3. Add a test to `sre-agent/tests/`.
+4. If it writes, claim the budget with `write=True`, call `_require_operator`, and update the table in `AGENTS.md`.
 
 Changing behaviour:
 
-- Policy that shapes reasoning belongs in `sre-agent/prompts/sre-agent.md`.
+- Policy that shapes reasoning belongs in `sre-agent/AGENTS.md`: `sre-agent/AGENT.md` is the text the Console injects as instructions, and it points there, so one file stays authoritative.
 - Policy that constrains tools belongs in `AGENTS.md` and, when it must be enforceable, in code.
 - Anything that changes the incident lifecycle updates `spec.md` and, if it is hard to reverse, gets an ADR in `sre-agent/docs/adr/`.
 
