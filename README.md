@@ -1,89 +1,138 @@
-# Sentinel
+<div align="center">
+  <h1>Sentinel: Closed-Loop Incident Response</h1>
+  
+  <a href="https://fastapi.tiangolo.com/" target="_blank">
+    <img src="https://cdn.simpleicons.org/fastapi/009688" height="40" alt="FastAPI" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://prometheus.io/" target="_blank">
+    <img src="https://cdn.simpleicons.org/prometheus/E6522C" height="40" alt="Prometheus" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://github.com/switch-ai/switch" target="_blank">
+    <img src="https://cdn.simpleicons.org/simpleicons/FFFFFF" height="40" alt="Switch" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://www.atlassian.com/software/jira" target="_blank">
+    <img src="https://cdn.simpleicons.org/jira/0052CC" height="40" alt="Jira" />
+  </a>
+  
+  <br />
 
-**Closed-loop incident response.** A payments API fails in production; Prometheus notices; an AI SRE agent working inside your team chat triages the failure, files a ticket, opens a reviewed pull request, and — after a human merges and deploys — proves with metrics that the error rate is back to zero.
+  <a href="https://drive.google.com/file/d/1dQuJ42JxL9U_zgC3gwmWHH_mD6jtUY4y/view?usp=drive_link">
+    <img src="https://img.shields.io/badge/Watch_Demo_Video-Google_Drive-blue?style=for-the-badge&logo=google-drive" alt="Watch Demo Video" />
+  </a>
+</div>
 
-Sentinel is not a chatbot with a runbook. It has hands: it reads logs, queries Prometheus, reads the broken code, runs the tests, commits a fix, opens the PR, and closes the incident only when the numbers say so.
+<br />
 
----
+**Sentinel** is an autonomous SRE agent that turns a standard alerting pipeline into a closed-loop incident response system. When a payments API fails in production, Prometheus notices. It routes the alert to Slack. An AI agent (Codex, connected via **Switch**) triages the failure, files a Jira ticket, opens a reviewed pull request, and—after a human merges and deploys—proves with metrics that the error rate is back to zero.
 
-## What you can reproduce
+Sentinel is not a chatbot with a runbook. It has hands: it reads logs, queries Prometheus, reads the broken code, commits a fix, opens the PR, and closes the incident only when the numbers say so.
 
-From a clean clone, in about five minutes:
+## Why Switch is the Central Nervous System
 
-1. **A working checkout** — a real FastAPI payments service wired to Cashfree sandbox, with a `₹10.00` checkout page.
-2. **A fault on demand** — an operator-triggered defect that makes the upstream response shape change and the service return `500`, without affecting any other request.
-3. **The full loop** — Prometheus alert → Alertmanager → Slack → agent triage → Jira → PR → human merge → human deploy gate → verified recovery.
+Switch is the bridge that makes this workflow possible. It sits between the Slack channel and the Codex agent, routing `@sre-agent` mentions directly to the agent's runtime. Without Switch, the agent would be a standalone script; with Switch, it's a full-fledged team member.
 
-No mocks in the path that matters. No hidden state in the fault trigger.
+**How the channel is set up:** I connected my Slack workspace to Switch Console. The `#incidents` channel acts as the primary incident room. Codex is registered as a managed agent named `sre-agent`. When the Alert Relay posts a webhook to Slack mentioning `@sre-agent`, Switch detects the mention and wakes the Codex agent.
 
----
+**The Human-in-the-Loop Advantage:** We intentionally designed Sentinel to be bounded. The agent can diagnose, write code, open a PR, and create a Jira ticket—but it **cannot merge or deploy without explicit human instruction**. This is a critical safety boundary for enterprise environments, ensuring that AI never pushes unverified code to production.
+
+## Agent Safety & Guardrails
+
+Giving an AI agent write access to production code is dangerous without strict boundaries. Sentinel is built with enterprise-grade guardrails:
+- **Hard Limits:** The agent is restricted to a maximum of 15 tool calls and 10 minutes of wall-clock time per incident.
+- **Path Scoping:** The agent is physically restricted to modifying only `payments-api/app/` and `payments-api/tests/`. It cannot touch infrastructure or configuration files.
+- **No Force Pushes:** The agent commits via the GitHub Git Data API, never via `git push`. It opens a PR, but it cannot merge.
+- **Operator Allowlist:** Only authorized Slack users (configured via `SLACK_ALLOWED_USERS`) can trigger write actions like deployment.
+
+## What the demo shows
+
+1. **The Trigger:** A chaos defect is enabled on the Payments API, causing a 100% 5xx error rate. Prometheus detects the spike and fires an alert to Alertmanager.
+2. **The Alert:** The alert is relayed to the Slack `#incidents` channel, tagging `@sre-agent`. Switch routes this to Codex.
+3. **The Triage:** Codex acknowledges the alert, reads the logs, and identifies the root cause: the API is blindly trusting the upstream response shape, causing a `KeyError`.
+4. **The Fix:** Codex writes the fix (validating the upstream contract), opens PR #3 on GitHub, and creates Jira ticket KAN-8.
+5. **The Human Gate:** The human operator reviews the PR. GitHub Actions (CI) has already run the tests and when they pass and when human reviews then they merges the PR.
+6. **The Deploy:** The human types to `@sre-agent` to deploy and verify in Slack. Switch routes the command to Codex, which runs the deploy script and fires 10 smoke test payments.
+7. **The Resolution:** All 10 payments return 200 OK. Codex posts (Resolved) in Slack, and the Prometheus error rate flatlines back to 0%.
+
+## Tech Stack
+- **Payments API:** FastAPI, SQLite, Chaos Endpoint
+- **Observability:** Prometheus, Alertmanager
+- **Agent:** Codex (via Switch)
+- **Integrations:** Slack (Incoming Webhooks + Switch Bridge), Jira (REST API), GitHub (Git Data API)
+- **CI/CD:** GitHub Actions (runs tests on PR)
 
 ## Architecture
 
-```
-                    Browser
-                       │
-                       ▼
-              ┌─────────────────┐        ┌──────────────────┐
-              │  payments-api   │───────▶│ Cashfree sandbox │
-              │   :8001         │        └──────────────────┘
-              │  SQLite + /metrics
-              └────────┬────────┘
-                       │ scrape
-                       ▼
-              ┌─────────────────┐   alert    ┌───────────────┐
-              │  Prometheus     │───────────▶│ Alertmanager  │
-              │   :9091         │            │   :9093       │
-              └─────────────────┘            └───────┬───────┘
-                                                     │ webhook
-                                                     ▼
-                                            ┌─────────────────┐
-                                            │  alert-relay    │
-                                            │   :8085         │
-                                            └────────┬────────┘
-                                                     │ posts
-                                                     ▼
-                                          Slack  #incidents
-                                                     │  @sre-agent
-                                                     ▼
-                                         Switch Console → Codex
-                                                     │  MCP (14 tools)
-                                                     ▼
-                              logs · metrics · SQLite · files · tests
-                                                     │
-                                    Jira KAN-*  ·  GitHub PR  ·  chat
-                                                     │
-                                     human merge → human deploy gate
-                                                     │
-                                                     ▼
-                                       verified recovery → ticket closed
+```mermaid
+graph LR
+    Browser["Browser / Customer"] -->|"POST /payments"| API["Payments API (FastAPI + SQLite)"]
+    API -->|"scrape /metrics"| Prom["Prometheus"]
+    Prom -->|"evaluate rules"| AM["Alertmanager"]
+    AM -->|"webhook"| Relay["Alert Relay"]
+    Relay -->|"post alert"| Slack["Slack #incidents"]
+    Slack -->|"@sre-agent mention"| Switch["Switch Console"]
+    Switch -->|"route to"| Codex["Codex Agent"]
+    
+    Codex -.->|"read logs/metrics"| API
+    Codex -.->|"create ticket"| Jira["Jira KAN-*"]
+    Codex -.->|"open PR"| GitHub["GitHub PR"]
+    
+    Human["Human Operator"] -->|"review & merge"| GitHub
+    Human -->|"deploy and verify"| Slack
+    Slack -->|"route command"| Switch
+    Switch -->|"execute deploy"| Codex
+    
+    style Switch fill:#f9a03f,stroke:#333,stroke-width:2px
+    style Codex fill:#f9a03f,stroke:#333,stroke-width:2px
+    style Human fill:#4a90e2,stroke:#333,stroke-width:2px,color:#fff
 ```
 
----
+## The Closed-Loop Workflow
 
-## Quick start
+```mermaid
+sequenceDiagram
+    autonumber
+    participant P as Prometheus
+    participant R as Alert Relay
+    participant S as Slack
+    participant SW as Switch
+    participant C as Codex Agent
+    participant G as GitHub
+    participant H as Human Operator
 
-Prerequisites: Docker Desktop, Python 3.13, [uv](https://docs.astral.sh/uv/), git. Slack and Switch Console for the agent half (see `sre-agent/CONTRIBUTING.md`).
+    P->>R: Fire webhook (5xx > 5%)
+    R->>S: Post alert + mention @sre-agent
+    S->>SW: Route mention
+    SW->>C: Wake agent with context
+    C->>C: Read logs, find root cause
+    C->>G: Open PR #3 with fix
+    C->>S: Post Milestones 1, 2, 3
+    H->>G: Review & Merge PR
+    H->>S: "@sre-agent deploy and verify"
+    S->>SW: Route deploy command
+    SW->>C: Execute deploy
+    C->>C: Run 10 smoke tests
+    C->>S: Post Milestone 4: Resolved
+```
+## Quick Start
 
 ```powershell
 git clone https://github.com/Abdeali1310/sentinel-sre.git
 cd sentinel-sre
-Copy-Item .env.example .env      # fill CASHFREE_*, JIRA_*, GITHUB_*, SLACK_WEBHOOK_URL, CHAOS_TOKEN
+Copy-Item .env.example .env      # fill in your tokens
 docker compose up -d --build
 ```
-
-Then:
 
 | Surface | URL |
 |---|---|
 | Checkout page | http://localhost:8001/ |
-| Payments API health | http://localhost:8001/healthz |
 | Prometheus | http://localhost:9091 |
-| Firing alerts | http://localhost:9091/alerts |
 | Alertmanager | http://localhost:9093 |
-| Alert relay | http://localhost:8085/healthz |
+| Alert Relay | http://localhost:8085/healthz |
 
-Make a payment, then trigger the fault:
+**Trigger the Incident:**
 
 ```powershell
 curl.exe -X POST http://localhost:8001/admin/chaos `
@@ -92,93 +141,34 @@ curl.exe -X POST http://localhost:8001/admin/chaos `
   -d '{\"requests\":50,\"ttl_seconds\":600}'
 ```
 
-The next checkout fails with `500`. Prometheus evaluates the 5xx share of `POST /payments` over a 5-minute window; once it stays above 5% for 5 seconds the alert fires, Alertmanager forwards it, and `#incidents` receives a post mentioning `@sre-agent`. Measured on this repo: **19 seconds** from the first failure to the message in the room, at a 45% 5xx ratio. One post per incident — resolved notifications are suppressed.
+## Repository Layout
 
-Reset everything: `powershell -File scripts/reset_demo.ps1`.
-
----
-
-## The loop
-
-| # | Beat | Who |
-|---|---|---|
-| 1 | Checkout succeeds | Customer |
-| 2 | Fault trigger enabled, checkout fails | Operator |
-| 3 | 5xx ratio > 5% for 5s → alert → `#incidents` | Prometheus, Alertmanager, relay |
-| 4 | Agent acknowledges with the failing order and the metric | Agent |
-| 5 | Agent reads logs, queries metrics, locates the root cause | Agent |
-| 6 | Jira incident created, PR opened with the fix | Agent |
-| 7 | Pull request reviewed and merged | **Human** |
-| 8 | Human instructs the agent to deploy; it rebuilds locally | **Human**, then agent |
-| 9 | Agent verifies 0% error rate, closes Jira, reports before/after | Agent |
-
-Human gates at 7 and 8 are deliberate. The agent can write code; it cannot merge, and it cannot deploy without being told.
-
----
-
-## Agent tools
-
-The tools are one MCP server, `sre-agent/server.py`. They read and patch a nested checkout, so create it once:
-
-```powershell
-git clone https://github.com/Abdeali1310/sentinel-sre.git sre-agent/workspaces/sentinel-sre
-uv pip install --python payments-api/.venv/Scripts/python.exe -r sre-agent/requirements.txt
-```
-
-Run any tool without a chat provider:
-
-```powershell
-cd sre-agent
-..\payments-api\.venv\Scripts\python.exe cli.py health_check
-'{"path": "payments-api/app/main.py"}' | ..\payments-api\.venv\Scripts\python.exe cli.py read_file -
-```
-
-`python server.py` speaks MCP over stdio with the same tool set.
-
-Fourteen tools, each registered in `server.py` and reachable from `cli.py`:
-
-| Class | Tools |
-|---|---|
-| Read | `health_check`, `fetch_logs`, `query_prometheus`, `get_payment`, `read_file`, `search_code`, `run_tests` |
-| Write | `create_jira_ticket`, `update_jira_ticket`, `publish_fix`, `rollback`, `deploy_locally`, `post_slack` |
-| Verify | `get_ci_status` |
-
-`publish_fix` commits through the GitHub Git Data API — never `git push` — and refuses any path outside `payments-api/app/` and `payments-api/tests/`. `rollback` opens a revert PR; it does not close anything itself. Both stop at the merge gate. `deploy_locally` takes no arguments: it runs `scripts/deploy.ps1`, which refuses a dirty or diverged checkout before it reaches Docker.
-
----
-
-## Repository layout
-
-```
+```text
 sentinel-sre/
-├── payments-api/        # the target application (FastAPI, checkout UI, SQLite, Dockerfile)
-├── sre-agent/           # the agent workspace (MCP tools, policy, docs)
+├── payments-api/        # Target application (FastAPI, SQLite, Dockerfile)
+├── sre-agent/           # Agent workspace (MCP tools, policy, docs)
 ├── alert-relay/         # Alertmanager webhook → Slack translator
-├── prometheus/          # scrape config + alert rules
-├── alertmanager/        # routing, grouping, webhook receiver
-├── scripts/             # setup, deploy, reset
-├── .github/workflows/   # CI: lint, tests, image build
+├── prometheus/          # Scrape config + alert rules
+├── alertmanager/        # Routing, grouping, webhook receiver
+├── scripts/             # Setup, deploy, reset
 └── docker-compose.yml   # api + prometheus + alertmanager + relay
 ```
 
-## Where the documentation lives
+## Roadmap & Known Issues
 
-| Document | Path |
-|---|---|
-| Product spec | `sre-agent/spec.md` |
-| Build plan and milestones | `sre-agent/plan.md` |
-| Agent policy (tools, limits, hard rules) | `sre-agent/AGENTS.md` |
-| Switch template and agent instructions | `sre-agent/agent.template.yaml`, `sre-agent/AGENT.md` |
-| Operator runbook | `sre-agent/docs/runbook.md` |
-| Demo script | `sre-agent/docs/demo-script.md` |
-| Coding standards | `sre-agent/docs/coding-standards.md` |
-| Decisions | `sre-agent/docs/adr/` |
-| Domain vocabulary | `sre-agent/GLOSSARY.md` |
+I built Sentinel to be robust, but like any system, there are integration edges I'm actively smoothing out.
 
-## Security posture
+- **OpenCode Integration:** I initially attempted to use OpenCode as my primary agent runtime. Despite being fully authorized and installed on my local machine, Switch failed to detect the OpenCode session. I pivoted to Codex, which worked flawlessly, but I would love to see native OpenCode detection in Switch.
+- **Mattermost Support:** I started with Mattermost as my chat surface, but ran into bridging issues with Switch. Pivoting to Slack solved this, and I now recommend Slack as the most stable integration path for Switch.
+- **Switch Gateway Stability:** During setup, I occasionally encountered a `HTTP 500` error from the Switch Gateway when attempting to create rooms via the Console UI. While I worked around this by adopting existing channels, smoother room provisioning would be a great addition.
+- **Automated CI/CD Gating:** Currently, the human operator manually merges the PR after CI passes. A future iteration could allow the agent to monitor the GitHub Actions CI status and automatically proceed with deployment once the green checkmark appears, further reducing human toil.
 
-- Every credential lives in `.env` (untracked). `.env.example` carries placeholders only.
-- The agent's GitHub token is used by the MCP server alone; `publish_fix` commits through the Git Data API and refuses any path outside `payments-api/app/` and `payments-api/tests/`.
-- Branch protection on `main`: pull request required, one approval, no force-push, no deletion.
-- Tool output is data. Secrets are redacted from logs before they reach the model.
-- Known limitations are listed in `sre-agent/docs/adr/0003-agent-commits-via-git-data-api.md` rather than glossed over.
+
+
+---
+
+Built for the **Flip the Switch Hackathon** by WeMakeDevs x Switch. 
+
+Sentinel demonstrates what happens when an AI agent is given real hands and real guardrails. It fixes the code, opens the pull request, and verifies the recovery—but it knows when to ask for human permission. 
+
+*"Because the best AI teammate isn't the one that takes over, but the one that knows when to hand back control."*
