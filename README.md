@@ -9,15 +9,15 @@
     <img src="https://cdn.simpleicons.org/prometheus/E6522C" height="40" alt="Prometheus" />
   </a>
   &nbsp;&nbsp;
-  <a href="https://github.com/switch-ai/switch" target="_blank">
-    <img src="https://cdn.simpleicons.org/simpleicons/FFFFFF" height="40" alt="Switch" />
+  <a href="https://slack.com/" target="_blank">
+    <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/slack.svg" height="40" alt="Slack" style="filter: invert(1);" />
   </a>
   &nbsp;&nbsp;
   <a href="https://www.atlassian.com/software/jira" target="_blank">
     <img src="https://cdn.simpleicons.org/jira/0052CC" height="40" alt="Jira" />
   </a>
   
-  <br />
+  <br /><br />
 
   <a href="https://drive.google.com/file/d/1dQuJ42JxL9U_zgC3gwmWHH_mD6jtUY4y/view?usp=drive_link">
     <img src="https://img.shields.io/badge/Watch_Demo_Video-Google_Drive-blue?style=for-the-badge&logo=google-drive" alt="Watch Demo Video" />
@@ -32,7 +32,7 @@ Sentinel is not a chatbot with a runbook. It has hands: it reads logs, queries P
 
 ## Why Switch is the Central Nervous System
 
-Switch is the bridge that makes this workflow possible. It sits between the Slack channel and the Codex agent, routing `@sre-agent` mentions directly to the agent's runtime. Without Switch, the agent would be a standalone script; with Switch, it's a full-fledged team member.
+[Switch](https://github.com/sandbox-quantum/switch) is the bridge that makes this workflow possible. It sits between the Slack channel and the Codex agent, routing `@sre-agent` mentions directly to the agent's runtime. Without Switch, the agent would be a standalone script; with Switch, it's a full-fledged team member.
 
 **How the channel is set up:** I connected my Slack workspace to Switch Console. The `#incidents` channel acts as the primary incident room. Codex is registered as a managed agent named `sre-agent`. When the Alert Relay posts a webhook to Slack mentioning `@sre-agent`, Switch detects the mention and wakes the Codex agent.
 
@@ -59,7 +59,7 @@ Giving an AI agent write access to production code is dangerous without strict b
 ## Tech Stack
 - **Payments API:** FastAPI, SQLite, Chaos Endpoint
 - **Observability:** Prometheus, Alertmanager
-- **Agent:** Codex (via Switch)
+- **Agent:** Codex (via [Switch](https://github.com/sandbox-quantum/switch))
 - **Integrations:** Slack (Incoming Webhooks + Switch Bridge), Jira (REST API), GitHub (Git Data API)
 - **CI/CD:** GitHub Actions (runs tests on PR)
 
