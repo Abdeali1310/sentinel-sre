@@ -17,7 +17,7 @@
     <img src="https://cdn.simpleicons.org/jira/0052CC" height="40" alt="Jira" />
   </a>
   
-  <br />
+  <br /><br />
 
   <a href="https://drive.google.com/file/d/1dQuJ42JxL9U_zgC3gwmWHH_mD6jtUY4y/view?usp=drive_link">
     <img src="https://img.shields.io/badge/Watch_Demo_Video-Google_Drive-blue?style=for-the-badge&logo=google-drive" alt="Watch Demo Video" />
