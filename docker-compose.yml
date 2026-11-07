@@ -49,8 +49,8 @@ services:
       - "8085:8085"
     env_file:
       - .env
-    # The Mattermost webhook points at the host's loopback; inside the container
-    # that address is host.docker.internal. The relay rewrites it at startup.
+    # A loopback webhook, used for local tests, is host.docker.internal from
+    # inside the container. The relay rewrites it at startup.
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
