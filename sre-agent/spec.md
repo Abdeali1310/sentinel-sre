@@ -95,7 +95,7 @@ Every terminal state must be announced in the room. Silence is a failure mode.
 - **R7.2** Logs are redacted for `api key / token / password / secret / bearer / client_secret` before reaching the agent; output capped at 20 KB.
 - **R7.3** `read_file` is jailed to the agent workspace.
 - **R7.4** Tools accept no model-supplied shell command; `deploy_locally` and `fetch_logs` use fixed argument vectors.
-- **R7.5** Write actions check the requesting Mattermost username against an advisory allowlist and log the decision.
+- **R7.5** Write actions check the requesting Slack username against an advisory allowlist and log the decision.
 - **R7.6** The fault trigger requires `X-Chaos-Token`, is rate-bounded (50 requests / 10 minutes), and lives only in process memory.
 
 ## 5. Non-goals

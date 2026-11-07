@@ -10,7 +10,6 @@ For the person in `#incidents`. The agent follows `AGENTS.md`; this document is 
 | Prometheus | 9091 |
 | Alertmanager | 9093 |
 | Alert relay | 8085 |
-| Mattermost (existing) | 8065 |
 
 ## Before a run
 
@@ -71,7 +70,7 @@ curl.exe http://localhost:8085/healthz
 docker compose logs --tail=50 alert-relay
 ```
 
-In order: is Prometheus scraping (`/targets` shows `payments-api` UP)? Is the rule expression returning a value (`/graph`)? Is Alertmanager receiving (`/api/v2/alerts`)? Is the relay's webhook URL correct in `.env`, and is the Mattermost webhook bound to `#incidents`?
+In order: is Prometheus scraping (`/targets` shows `payments-api` UP)? Is the rule expression returning a value (`/graph`)? Is Alertmanager receiving (`/api/v2/alerts`)? Is the relay's webhook URL correct in `.env`, and is the Slack webhook bound to `#incidents`?
 
 Two traps worth checking before anything else:
 
@@ -79,7 +78,7 @@ Two traps worth checking before anything else:
 - **Old failures are still in the window.** After a failed drill the 5-minute window keeps the 5xx samples alive, so the rule can sit `pending` on stale data. Clear the TSDB before re-running: `docker compose rm -sf prometheus; docker volume rm sentinel_prometheus-data; docker compose up -d prometheus`.
 - **A repeat drill inside 30 minutes is silent on purpose.** `repeat_interval: 30m` means one post per incident; Alertmanager's notification log lives in its volume, so a fresh chaos burst within the window will fire again in `/api/v2/alerts` but post nothing. Recreate Alertmanager (`docker compose rm -sf alertmanager; docker volume rm sentinel_alertmanager-data; docker compose up -d alertmanager`) when you need a clean rehearsal.
 
-A `200` from the relay's `/webhook` means Mattermost accepted the post. Alertmanager retries on any non-2xx, so a `502` in its log means the webhook URL or the room is wrong.
+A `200` from the relay's `/webhook` means Slack accepted the post. Alertmanager retries on any non-2xx, so a `502` in its log means the webhook URL or the room is wrong.
 
 ## The agent is stuck or looping
 
@@ -129,7 +128,7 @@ Then pass the deploy gate as usual. Rollback restores the previous deployed vers
 
 - GitHub PAT: revoke in GitHub → Developer settings → Fine-grained tokens; create a replacement scoped to `sentinel-sre` only; update `.env`; restart the MCP server and any shell holding the old value.
 - Jira API token: Atlassian account settings → Security → API tokens. Update `.env`, restart the MCP server.
-- Mattermost webhook: delete and recreate in Integrations → Incoming Webhooks; update `.env`; restart `alert-relay`.
+- Slack webhook: api.slack.com/apps → Incoming Webhooks → revoke and recreate; update `.env`; restart `alert-relay`.
 - `CHAOS_TOKEN`: edit `.env`, restart `payments-api`.
 
 After any rotation, run the *Before a run* checklist.
@@ -144,7 +143,7 @@ Does: disable chaos, truncate `payments.db`, `git fetch` + `reset --hard origin/
 
 ## Known limitations
 
-- The Mattermost allowlist for write actions is advisory. Switch may not expose the message author to MCP tools; see `spec.md` §7.
+- The Slack allowlist for write actions is advisory. Switch may not expose the message author to MCP tools; see `spec.md` §7.
 - The agent's shell is not sandboxed from `.env`. The token is kept out of the agent environment, but a determined prompt injection is not fully containable on one machine.
 - One incident at a time. Two concurrent alerts will interleave and confuse the room.
 - The fault trigger is a simulation tool. It must stay token-guarded and is not a production feature.

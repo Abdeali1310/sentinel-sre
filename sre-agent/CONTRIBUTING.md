@@ -4,14 +4,14 @@ Two halves: the target application (`payments-api/`) and the agent workspace (`s
 
 ## Setup
 
-Prerequisites: Docker Desktop, Python 3.13, [uv](https://docs.astral.sh/uv/), git. For the agent: Mattermost, Switch Console, Codex CLI.
+Prerequisites: Docker Desktop, Python 3.13, [uv](https://docs.astral.sh/uv/), git. For the agent: Slack, Switch Console, Codex CLI.
 
 ```powershell
 git clone https://github.com/Abdeali1310/sentinel-sre.git
 cd sentinel-sre
 Copy-Item .env.example .env
 # Fill: CASHFREE_CLIENT_ID, CASHFREE_CLIENT_SECRET, CHAOS_TOKEN,
-#       MATTERMOST_WEBHOOK_URL, JIRA_EMAIL, JIRA_API_TOKEN, GITHUB_TOKEN
+#       SLACK_WEBHOOK_URL, JIRA_EMAIL, JIRA_API_TOKEN, GITHUB_TOKEN
 docker compose up -d --build
 ```
 
@@ -38,7 +38,7 @@ Then add the agent from `sre-agent/agent.template.yaml` in Switch Console:
 
 1. Templates → read `sre-agent/agent.template.yaml`. The form asks for one thing: the policy folder. Pick this checkout's `sre-agent/` directory. The file is version 2, which needs a server with agent management; a server without it takes the version-1 shape instead.
 2. On the new agent, set the handle `sre-agent` (display name `Sentinel`), `codex`, `auto_approve` off, `auto_mode` on.
-3. Add it to the existing private `#incidents` room with addressing `anyone`, so an alert mention wakes it, then connect the Mattermost bridge for that room.
+3. Add it to the existing private `#incidents` room with addressing `anyone`, so an alert mention wakes it.
 4. Send a test mention. The agent's first call is `health_check`; if the room stays silent, the bridge or the mention is the problem, not the tools.
 
 `scripts/deploy.ps1` is what `deploy_locally` runs. It takes no arguments and refuses a dirty or diverged checkout, so run it yourself from the repository root to prove the deploy path without the agent.

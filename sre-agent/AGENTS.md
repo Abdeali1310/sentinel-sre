@@ -25,7 +25,7 @@ Working directory: this folder. The application source lives in `workspaces/sent
 | Record | `create_jira_ticket`, `update_jira_ticket` |
 | Change | `publish_fix`, `rollback`, `deploy_locally` |
 | Verify | `get_ci_status` |
-| Report | `post_mattermost` |
+| Report | `post_slack` |
 
 ## Procedure
 

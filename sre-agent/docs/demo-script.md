@@ -23,14 +23,14 @@ Target length **3:00**. One take after two clean rehearsals. Screen 1920×1080, 
 | 0:00 | Checkout page | Click **Pay now**, show spinner, green receipt `ORD-… paid` | "This is a ₹10 checkout against Cashfree sandbox. Normal traffic, normal day." |
 | 0:20 | Terminal | Paste chaos `curl` → "fault trigger enabled for 50 requests" | "An operator enables a known-bad upstream condition: the provider starts returning `orderId` instead of `order_id`." |
 | 0:28 | Checkout | Pay again → red banner "Something went wrong. Please try again." | "The customer sees a failure. The stack trace stays in the logs, where it belongs." |
-| 0:40 | Prometheus → Mattermost | Cut to `#incidents`; the alert lands ~20 s after the first failure | "Prometheus sees the 5xx ratio cross five percent. Alertmanager forwards it, the relay posts it, and it mentions the agent." |
-| 1:05 | Mattermost | Agent milestone 1: symptom, the measured 5xx ratio, failing order id | "No prompt. The alert woke the agent. It states the symptom with a number before touching anything." |
-| 1:12 | Mattermost | Milestone 2 — root cause: unvalidated upstream response shape, with a log line as evidence | "Four tool calls: logs, metric, the failed payment, the code. It names the root cause and shows the evidence." |
-| 1:35 | Mattermost + Jira | Ticket `KAN-…` created; milestone 3 — PR link | "The ticket is diagnostic, not a copy of the alert. Then a branch, a regression test, and a pull request." |
+| 0:40 | Prometheus → Slack | Cut to `#incidents`; the alert lands ~20 s after the first failure | "Prometheus sees the 5xx ratio cross five percent. Alertmanager forwards it, the relay posts it, and it mentions the agent." |
+| 1:05 | Slack | Agent milestone 1: symptom, the measured 5xx ratio, failing order id | "No prompt. The alert woke the agent. It states the symptom with a number before touching anything." |
+| 1:12 | Slack | Milestone 2 — root cause: unvalidated upstream response shape, with a log line as evidence | "Four tool calls: logs, metric, the failed payment, the code. It names the root cause and shows the evidence." |
+| 1:35 | Slack + Jira | Ticket `KAN-…` created; milestone 3 — PR link | "The ticket is diagnostic, not a copy of the alert. Then a branch, a regression test, and a pull request." |
 | 1:50 | GitHub PR | Scroll the diff: model validation where the dict index used to be; test file added | "The fix is a real change with a test that fails on the old code. The agent cannot merge this — that is my job." |
-| 2:00 | GitHub + Mattermost | Click **Merge**; type in chat: `@sre-agent the PR is merged. Deploy and verify.` | "I merge, then I pass the deploy gate myself." |
-| 2:10 | Mattermost | `deploy_locally` output: the built commit sha, then `healthz ok after Ns` | "The agent deploys the merged commit locally, and the rebuilt container clears the fault state — a clean slate to measure against." |
-| 2:20 | Mattermost | Milestone 4 — measured before → after error ratio, "10/10 smoke payments passed" + Jira `Done` | "It checks metrics and smoke payments, not the PR status. Then it closes the ticket and reports the number that matters." |
+| 2:00 | GitHub + Slack | Click **Merge**; type in chat: `@sre-agent the PR is merged. Deploy and verify.` | "I merge, then I pass the deploy gate myself." |
+| 2:10 | Slack | `deploy_locally` output: the built commit sha, then `healthz ok after Ns` | "The agent deploys the merged commit locally, and the rebuilt container clears the fault state — a clean slate to measure against." |
+| 2:20 | Slack | Milestone 4 — measured before → after error ratio, "10/10 smoke payments passed" + Jira `Done` | "It checks metrics and smoke payments, not the PR status. Then it closes the ticket and reports the number that matters." |
 | 2:35 | Architecture slide | Static image of the loop | "Alert, diagnose, fix, review, deploy, verify. The agent does the work; the human keeps the keys." |
 
 ## Exact chat messages
@@ -154,11 +154,10 @@ On the new agent's page:
 5. **Auto-mode**: **on** — this is what lets an alert mention wake the agent without a direct reply.
 6. **Addressing**: `anyone` — the alert relay mentions `@sre-agent`; with `addressing: anyone` the agent wakes on that mention even though it was not spoken to directly.
 
-### 3. Bind the room and connect the bridge
+### 3. Bind the room
 
 1. Add the agent to the existing private **#incidents** channel.
-2. In that channel, connect the Mattermost bridge for the room (Switch → channel settings → bridge / Mattermost).
-3. Confirm the bridge is live: the agent should show as online in Switch Console and present in `#incidents`.
+2. Confirm it is bound: the agent shows as online in Switch Console and present in `#incidents`.
 
 ### 4. Smoke test the binding
 
@@ -168,14 +167,14 @@ Send a test mention in `#incidents`:
 @sre-agent ping
 ```
 
-Expected: the agent's first tool call is `health_check`. It replies with the three dependencies (payments-api, Prometheus, Alertmanager) and their status. If the room stays silent for more than a minute, the problem is the bridge or the mention delivery — not the tools. Disable the agent in Switch Console to confirm the kill switch works, then re-enable.
+Expected: the agent's first tool call is `health_check`. It replies with the three dependencies (payments-api, Prometheus, Alertmanager) and their status. If the room stays silent for more than a minute, the problem is the room binding or the mention delivery — not the tools. Disable the agent in Switch Console to confirm the kill switch works, then re-enable.
 
 ### 5. One thing the template cannot do
 
 The template creates the agent and points it at the policy folder. Two things are Console-UI-only and must be done after import:
 
 - Setting the handle to `sre-agent` (the template names the resource, not the handle).
-- Binding the agent to the existing `#incidents` room and connecting the Mattermost bridge for it.
+- Binding the agent to the existing `#incidents` room.
 
 There is no Switch control-API route that writes an agent definition; the control API on port 49721 authenticates with `x-switch-control-token` and exposes `/agents` reads plus session create/delete only.
 

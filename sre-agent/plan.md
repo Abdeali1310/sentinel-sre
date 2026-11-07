@@ -7,7 +7,7 @@ Companion to `spec.md`. Each milestone ends in something demonstrable, so a slip
 | Date | Milestones | Notes |
 |---|---|---|
 | Nov 5 (evening) | M1, M2 | Target app runs; failure reproduces |
-| Nov 6 (morning) | M3 | Alert lands in Mattermost |
+| Nov 6 (morning) | M3 | Alert lands in Slack |
 | Nov 6 (afternoon) | M4, M5 | Tools work from the CLI; agent opens a PR |
 | Nov 7 (morning) | M6 | Full loop through Switch |
 | Nov 7 (afternoon) | M7 | Rollback, reset, docs, recording |
@@ -31,7 +31,7 @@ Note: the defect is real and stays in the codebase's history. The trigger is the
 
 ## M3 — Detection (≈2h)
 
-Build: Prometheus config and rules, Alertmanager config with grouping, `alert-relay` (FastAPI + Mattermost webhook), compose wiring on ports `9091`, `9093`, `8085`.
+Build: Prometheus config and rules, Alertmanager config with grouping, `alert-relay` (FastAPI + Slack webhook), compose wiring on ports `9091`, `9093`, `8085`.
 
 Acceptance: enable chaos, fail 3 payments, alert appears in `#incidents` within 30s with severity, value, fingerprint, runbook link and `@sre-agent`; `repeat_interval` prevents a second post within 30 minutes.
 
@@ -43,7 +43,7 @@ Acceptance: every tool runs from the CLI harness against the live stack; redacti
 
 ## M5 — Change and record-keeping tools (≈3h)
 
-Build: `create_jira_ticket`, `update_jira_ticket`, `publish_fix` (Git Data API, path allowlist), `post_mattermost`, `get_ci_status`, `rollback`.
+Build: `create_jira_ticket`, `update_jira_ticket`, `publish_fix` (Git Data API, path allowlist), `post_slack`, `get_ci_status`, `rollback`.
 
 Acceptance: agent creates a `Task`/`P1` incident in `KAN` (the project has no `Bug` type); `publish_fix` opens a PR touching only `payments-api/`; an attempt to include `.github/workflows/ci.yml` is refused by a test.
 
@@ -51,7 +51,7 @@ Measured: `KAN-7` (Task, `In Progress`) and PR #2 with two files; the repository
 
 ## M6 — Switch integration (≈3h, highest risk)
 
-Build: `agent.template.yaml` (persona, provider `codex`, `directory`, `addressing: anyone`); `AGENTS.md`; room bound to Mattermost; `codex mcp add sre-tools`; milestone messages; deploy instruction handling.
+Build: `agent.template.yaml` (persona, provider `codex`, `directory`, `addressing: anyone`); `AGENTS.md`; room bound to Slack; `codex mcp add sre-tools`; milestone messages; deploy instruction handling.
 
 Acceptance: alert mention wakes the agent; four milestone messages appear; `@sre-agent deploy` triggers `scripts/deploy.ps1`; verification numbers are quoted; Jira reaches `Done`.
 
@@ -59,7 +59,7 @@ Built: `agent.template.yaml` in the version-2 language (agent resource, `params`
 
 Measured: the deploy script refuses the working tree with 9 uncommitted paths and never reaches `docker compose`; four refusal paths are covered by `tests/test_deploy_script.py` against throwaway repositories. The Switch Console control API on port 49721 authenticates with `x-switch-control-token` and exposes `/agents` reads plus session create/delete only — there is no route that writes an agent definition, so creating the agent and binding the room stay Console UI steps.
 
-Risk: Switch/Mattermost provisioning details. Mitigation: start this milestone the moment M4 is green, not after M5 is polished.
+Risk: Switch/Slack provisioning details. Mitigation: start this milestone the moment M4 is green, not after M5 is polished.
 
 ## M7 — Hardening, docs, recording (≈4h)
 

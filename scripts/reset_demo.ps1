@@ -18,7 +18,7 @@ try {
     Write-Host "Health check failed: $_" -ForegroundColor Red
 }
 
-Write-Host "Resetting Mattermost chaos state..." -ForegroundColor Cyan
+Write-Host "Resetting chaos state..." -ForegroundColor Cyan
 try {
     Invoke-RestMethod -Uri "http://localhost:8001/admin/chaos" -Method Delete -Headers @{ "X-Chaos-Token" = $env:CHAOS_TOKEN } | Out-Null
     Write-Host "Chaos state cleared." -ForegroundColor Green
