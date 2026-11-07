@@ -29,7 +29,7 @@ TOOLS = {
     "rollback",
     "deploy_locally",
     "get_ci_status",
-    "post_mattermost",
+    "post_slack",
 }
 
 

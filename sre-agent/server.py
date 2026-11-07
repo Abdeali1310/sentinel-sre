@@ -105,9 +105,9 @@ def get_ci_status(ref: str) -> dict:
 
 
 @mcp.tool()
-def post_mattermost(text: str, requested_by: str = "") -> dict:
+def post_slack(text: str, requested_by: str = "") -> dict:
     """Post a milestone message to the incident room."""
-    return tools.post_mattermost(text, requested_by)
+    return tools.post_slack(text, requested_by)
 
 
 if __name__ == "__main__":

@@ -9,8 +9,8 @@
 # why the two must not be mixed.
 #
 # Two things this template cannot do, because only the Console can: bind the
-# agent to the existing Mattermost `#incidents` room, and set its handle. Do both
-# on the agent's page after it exists, then connect the bridge.
+# agent to the existing Slack `#incidents` room, and set its handle. Do both on
+# the agent's page after it exists.
 
 version: 2
 
