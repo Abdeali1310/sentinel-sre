@@ -16,7 +16,7 @@ from urllib.parse import quote
 import httpx
 
 from .budget import Budget
-from .clients import GitHubClient, JiraClient, MattermostClient
+from .clients import GitHubClient, JiraClient, SlackClient
 from .config import Settings
 from .errors import ToolError
 from .redact import redact
@@ -50,7 +50,7 @@ class Tools:
         )
         self.jira = JiraClient(settings, self.http)
         self.github = GitHubClient(settings, self.http)
-        self.mattermost = MattermostClient(settings, self.http)
+        self.slack = SlackClient(settings, self.http)
 
     @property
     def repo(self) -> Path:
@@ -70,7 +70,7 @@ class Tools:
         """R7.5: an advisory allowlist, logged whether it allows or refuses."""
         allowed = [
             user.strip().lstrip("@").casefold()
-            for user in self.settings.mattermost_allowed_users.split(",")
+            for user in self.settings.slack_allowed_users.split(",")
             if user.strip()
         ]
         who = (requested_by or "").strip().lstrip("@")
@@ -328,10 +328,10 @@ class Tools:
 
     # ------------------------------------------------------------------ reporting
 
-    def post_mattermost(self, text: str, requested_by: str = "") -> dict:
+    def post_slack(self, text: str, requested_by: str = "") -> dict:
         """Milestone message. Reporting stays available after the write lockout."""
-        self._claim("post_mattermost")
-        self._require_operator(requested_by, "post_mattermost")
+        self._claim("post_slack")
+        self._require_operator(requested_by, "post_slack")
         if not text.strip():
             raise ToolError("message is empty")
-        return self.mattermost.post(self._clean(text))
+        return self.slack.post(self._clean(text))

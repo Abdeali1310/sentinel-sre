@@ -1,4 +1,4 @@
-"""The change and record-keeping tools, against a fake GitHub/Jira/Mattermost."""
+"""The change and record-keeping tools, against a fake GitHub/Jira/Slack."""
 
 import json
 from pathlib import Path
@@ -21,9 +21,8 @@ def make_settings(tmp_path: Path, **overrides) -> Settings:
         workspace_dir=str(tmp_path / "workspace"),
         tests_python="python-test",
         secrets=[],
-        mattermost_webhook_url="http://mattermost.test/hooks/abc",
-        mattermost_channel="#incidents",
-        mattermost_allowed_users="alice",
+        slack_webhook_url="https://hooks.slack.com/services/test",
+        slack_allowed_users="alice",
         jira_url="https://jira.test",
         jira_email="agent@example.test",
         jira_api_token="jira-token",
@@ -300,7 +299,7 @@ def test_update_jira_ticket_lists_the_available_transitions(tmp_path):
         make_tools(tmp_path, handler).update_jira_ticket("KAN-9", transition="Shipped")
 
 
-def test_post_mattermost_sends_the_channel_and_text(tmp_path):
+def test_post_slack_sends_text_only(tmp_path):
     seen = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -308,11 +307,11 @@ def test_post_mattermost_sends_the_channel_and_text(tmp_path):
         seen["body"] = json.loads(request.content)
         return httpx.Response(200, text="ok")
 
-    result = make_tools(tmp_path, handler).post_mattermost("Root cause: KeyError 'order_id'.")
+    result = make_tools(tmp_path, handler).post_slack("Root cause: KeyError 'order_id'.")
 
-    assert result == {"posted": True, "channel": "#incidents"}
-    assert seen["url"] == "http://mattermost.test/hooks/abc"
-    assert seen["body"]["text"].startswith("Root cause")
+    assert result == {"posted": True}
+    assert seen["url"] == "https://hooks.slack.com/services/test"
+    assert seen["body"] == {"text": "Root cause: KeyError 'order_id'."}
 
 
 def test_write_tools_refuse_an_operator_outside_the_allowlist(tmp_path):
