@@ -12,7 +12,7 @@ From a clean clone, in about five minutes:
 
 1. **A working checkout** — a real FastAPI payments service wired to Cashfree sandbox, with a `₹10.00` checkout page.
 2. **A fault on demand** — an operator-triggered defect that makes the upstream response shape change and the service return `500`, without affecting any other request.
-3. **The full loop** — Prometheus alert → Alertmanager → Mattermost → agent triage → Jira → PR → human merge → human deploy gate → verified recovery.
+3. **The full loop** — Prometheus alert → Alertmanager → Slack → agent triage → Jira → PR → human merge → human deploy gate → verified recovery.
 
 No mocks in the path that matters. No hidden state in the fault trigger.
 
@@ -43,7 +43,7 @@ No mocks in the path that matters. No hidden state in the fault trigger.
                                             └────────┬────────┘
                                                      │ posts
                                                      ▼
-                                        Mattermost  #incidents
+                                          Slack  #incidents
                                                      │  @sre-agent
                                                      ▼
                                          Switch Console → Codex
@@ -63,12 +63,12 @@ No mocks in the path that matters. No hidden state in the fault trigger.
 
 ## Quick start
 
-Prerequisites: Docker Desktop, Python 3.13, [uv](https://docs.astral.sh/uv/), git. Mattermost and Switch Console for the agent half (see `sre-agent/CONTRIBUTING.md`).
+Prerequisites: Docker Desktop, Python 3.13, [uv](https://docs.astral.sh/uv/), git. Slack and Switch Console for the agent half (see `sre-agent/CONTRIBUTING.md`).
 
 ```powershell
 git clone https://github.com/Abdeali1310/sentinel-sre.git
 cd sentinel-sre
-Copy-Item .env.example .env      # fill CASHFREE_*, JIRA_*, GITHUB_*, MATTERMOST_WEBHOOK_URL, CHAOS_TOKEN
+Copy-Item .env.example .env      # fill CASHFREE_*, JIRA_*, GITHUB_*, SLACK_WEBHOOK_URL, CHAOS_TOKEN
 docker compose up -d --build
 ```
 
@@ -140,7 +140,7 @@ Fourteen tools, each registered in `server.py` and reachable from `cli.py`:
 | Class | Tools |
 |---|---|
 | Read | `health_check`, `fetch_logs`, `query_prometheus`, `get_payment`, `read_file`, `search_code`, `run_tests` |
-| Write | `create_jira_ticket`, `update_jira_ticket`, `publish_fix`, `rollback`, `deploy_locally`, `post_mattermost` |
+| Write | `create_jira_ticket`, `update_jira_ticket`, `publish_fix`, `rollback`, `deploy_locally`, `post_slack` |
 | Verify | `get_ci_status` |
 
 `publish_fix` commits through the GitHub Git Data API — never `git push` — and refuses any path outside `payments-api/app/` and `payments-api/tests/`. `rollback` opens a revert PR; it does not close anything itself. Both stop at the merge gate. `deploy_locally` takes no arguments: it runs `scripts/deploy.ps1`, which refuses a dirty or diverged checkout before it reaches Docker.
@@ -153,7 +153,7 @@ Fourteen tools, each registered in `server.py` and reachable from `cli.py`:
 sentinel-sre/
 ├── payments-api/        # the target application (FastAPI, checkout UI, SQLite, Dockerfile)
 ├── sre-agent/           # the agent workspace (MCP tools, policy, docs)
-├── alert-relay/         # Alertmanager webhook → Mattermost translator
+├── alert-relay/         # Alertmanager webhook → Slack translator
 ├── prometheus/          # scrape config + alert rules
 ├── alertmanager/        # routing, grouping, webhook receiver
 ├── scripts/             # setup, deploy, reset
