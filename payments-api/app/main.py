@@ -123,15 +123,23 @@ async def create_payment(
         db.mark_failed(settings.database_url, order_id, "upstream_unavailable")
         return _upstream_failure(order_id, "upstream_unavailable")
 
-    try:
-        confirmed_order_id = raw["order_id"]
-        provider_order_id = raw["cf_order_id"]
-    except KeyError as exc:
-        # The provider's payload is untrusted input. A missing field is a 502
-        # ("upstream said something we cannot accept"), never an unhandled 500.
-        logger.warning("provider_contract order_id=%s missing=%s", order_id, exc)
+    # The provider's payload is untrusted input. Validate its shape before using it.
+    # A missing field is a 502 ("upstream said something we cannot accept"),
+    # never an unhandled 500 or a silent corruption.
+    required = ("order_id", "cf_order_id")
+    missing = [k for k in required if k not in raw]
+    if missing:
+        logger.warning(
+            "provider_contract order_id=%s missing=%s raw_keys=%s",
+            order_id,
+            missing,
+            sorted(raw.keys()),
+        )
         db.mark_failed(settings.database_url, order_id, "upstream_contract")
         return _upstream_failure(order_id, "upstream_contract")
+
+    confirmed_order_id = raw["order_id"]
+    provider_order_id = raw["cf_order_id"]
 
     db.mark_paid(settings.database_url, order_id, provider_order_id)
     return PaymentOut(
