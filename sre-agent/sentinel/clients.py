@@ -1,4 +1,4 @@
-"""Thin clients for the three systems the agent writes to: Jira, GitHub, Mattermost.
+"""Thin clients for the three systems the agent writes to: Jira, GitHub, Slack.
 
 They hold no policy. `sentinel.tools.Tools` decides what may be called and with
 which paths; these clients only turn HTTP into a precise error message.
@@ -273,22 +273,22 @@ class GitHubClient:
         return {"ref": ref, "state": state, "checks": checks, "url": combined.get("target_url")}
 
 
-class MattermostClient:
+class SlackClient:
     def __init__(self, settings: Settings, http: httpx.Client) -> None:
         self.settings = settings
         self.http = http
 
     def post(self, text: str) -> dict:
-        if not self.settings.mattermost_webhook_url:
-            raise ToolError("MATTERMOST_WEBHOOK_URL is not set")
+        if not self.settings.slack_webhook_url:
+            raise ToolError("SLACK_WEBHOOK_URL is not set")
         try:
             response = self.http.post(
-                self.settings.mattermost_webhook_url,
-                json={"channel": self.settings.mattermost_channel, "text": text},
+                self.settings.slack_webhook_url,
+                json={"text": text},
                 headers={"Content-Type": "application/json"},
             )
         except httpx.HTTPError as exc:
-            raise ToolError(f"mattermost unreachable: {type(exc).__name__}") from exc
+            raise ToolError(f"slack unreachable: {type(exc).__name__}") from exc
         if not response.is_success:
-            raise ToolError(f"mattermost post: {_error_detail(response)}")
-        return {"posted": True, "channel": self.settings.mattermost_channel}
+            raise ToolError(f"slack post: {_error_detail(response)}")
+        return {"posted": True}

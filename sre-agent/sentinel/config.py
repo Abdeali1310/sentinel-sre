@@ -46,9 +46,8 @@ class Settings(BaseSettings):
     log_tail_max: int = 2_000
 
     # Record-keeping and change tools (M5).
-    mattermost_webhook_url: str = ""
-    mattermost_channel: str = "#incidents"
-    mattermost_allowed_users: str = ""
+    slack_webhook_url: str = ""
+    slack_allowed_users: str = ""
 
     jira_url: str = ""
     jira_base_url: str = ""
