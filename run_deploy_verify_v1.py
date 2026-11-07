@@ -131,7 +131,6 @@ if __name__ == "__main__":
     print(">>> Will retry deploy once the workspace is committed/clean.\n")
 
     sys.exit(2)
-    )
 
     ok, failed = smoke()
     ratio = (failed / 10.0) if ok + failed else 0.0
