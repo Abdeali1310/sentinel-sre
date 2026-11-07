@@ -9,7 +9,5 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    mattermost_webhook_url: str = ""
-    mattermost_channel: str = "#incidents"
-    bot_display_name: str = "Sentinel"
+    slack_webhook_url: str = ""
     runbook_url: str = ""

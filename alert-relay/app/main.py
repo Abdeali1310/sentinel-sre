@@ -1,4 +1,4 @@
-"""Alertmanager to Mattermost relay.
+"""Alertmanager to Slack relay.
 
 Alertmanager sends one webhook per group. Each alert becomes a short message
 carrying what the agent needs to start: severity, current value, fingerprint,
@@ -39,12 +39,15 @@ def build_message(alert: dict, *, runbook_url: str) -> str:
     value = annotations.get("description") or annotations.get("summary") or "no detail"
 
     lines = [
-        f"**{name}** · {severity}",
+        f"*{name}* · {severity}",
         value,
         f"Fingerprint: `{fingerprint}`",
     ]
     if runbook_url:
         lines.append(f"Runbook: {runbook_url}")
+    # Switch wakes an agent on a plain `@name` in the body, matched by its own
+    # token regex after the Slack bridge translates the message. Slack's
+    # `<@ID>` pill is not required and is not resolved for third-party bots.
     lines.append("@sre-agent")
     return "\n".join(lines)
 
@@ -62,24 +65,24 @@ def resolve_webhook_url(url: str, *, in_container: bool) -> str:
     return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
 
 
-class MattermostPoster:
+class SlackPoster:
     def __init__(self, settings: Settings) -> None:
         self.url = resolve_webhook_url(
-            settings.mattermost_webhook_url,
+            settings.slack_webhook_url,
             in_container=Path("/.dockerenv").exists(),
         )
-        self.username = settings.bot_display_name
 
     async def __call__(self, text: str) -> None:
+        # The webhook is bound to #incidents, so send text and nothing else.
         async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
-            response = await client.post(self.url, json={"text": text, "username": self.username})
+            response = await client.post(self.url, json={"text": text})
             response.raise_for_status()
 
 
 def create_app(settings: Settings, poster: Poster | None = None) -> FastAPI:
     app = FastAPI(title="Sentinel alert relay", version="1.0.0")
     app.state.settings = settings
-    app.state.poster = poster or MattermostPoster(settings)
+    app.state.poster = poster or SlackPoster(settings)
 
     @app.get("/healthz")
     def healthz() -> dict:
@@ -102,7 +105,7 @@ def create_app(settings: Settings, poster: Poster | None = None) -> FastAPI:
                 )
             except httpx.HTTPError as exc:
                 failed += 1
-                logger.warning("mattermost_post_failed error=%s", type(exc).__name__)
+                logger.warning("slack_post_failed error=%s", type(exc).__name__)
         if failed:
             return JSONResponse(status_code=502, content={"posted": posted, "failed": failed})
         return {"posted": posted}
