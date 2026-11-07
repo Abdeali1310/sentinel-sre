@@ -1,13 +1,15 @@
 """Behaviour of the alert relay at its public seam: the webhook Alertmanager calls.
 
-The Mattermost call is replaced by a recorder, so these tests never touch the
+The Slack call is replaced by a recorder, so these tests never touch the
 network or a real room.
 """
+
+import asyncio
 
 import httpx
 import pytest
 from app.config import Settings
-from app.main import create_app, resolve_webhook_url
+from app.main import SlackPoster, create_app, resolve_webhook_url
 from fastapi.testclient import TestClient
 
 RUNBOOK = "https://example.test/runbook"
@@ -52,9 +54,8 @@ class RecordingPoster:
 @pytest.fixture
 def settings() -> Settings:
     return Settings(
-        mattermost_webhook_url="http://localhost:8065/hooks/test",
+        slack_webhook_url="https://hooks.slack.com/services/test",
         runbook_url=RUNBOOK,
-        bot_display_name="Sentinel",
     )
 
 
@@ -95,10 +96,10 @@ def test_missing_fingerprint_falls_back_to_a_stable_hash(client, poster):
     assert "Fingerprint: `" in poster.messages[0]
 
 
-def test_mattermost_failure_is_surfaced_so_alertmanager_retries(settings):
+def test_slack_failure_is_surfaced_so_alertmanager_retries(settings):
     class BrokenPoster:
         async def __call__(self, text: str) -> None:
-            raise httpx.ConnectError("mattermost unreachable")
+            raise httpx.ConnectError("slack unreachable")
 
     client = TestClient(create_app(settings, poster=BrokenPoster()))
 
@@ -115,7 +116,7 @@ def test_empty_alert_batch_is_accepted_without_posting(client, poster):
 
 
 def test_loopback_webhook_is_rewritten_for_the_container():
-    """Mattermost runs on the host; a container reaches it as host.docker.internal."""
+    """A webhook on the host's loopback is reachable from a container only by name."""
 
     rewritten = resolve_webhook_url("http://localhost:8065/hooks/abc", in_container=True)
 
@@ -123,9 +124,36 @@ def test_loopback_webhook_is_rewritten_for_the_container():
 
 
 def test_remote_webhook_is_left_alone():
-    url = "https://mattermost.example.com/hooks/abc"
+    url = "https://hooks.slack.com/services/abc"
 
     assert resolve_webhook_url(url, in_container=True) == url
     assert resolve_webhook_url("http://localhost:8065/hooks/abc", in_container=False) == (
         "http://localhost:8065/hooks/abc"
     )
+
+
+def test_poster_sends_text_and_nothing_else(monkeypatch, settings):
+    """Slack rejects a body whose only top-level key is not `text`."""
+    seen = {}
+
+    class FakeClient:
+        def __init__(self, **kwargs) -> None:
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc) -> bool:
+            return False
+
+        async def post(self, url, json):
+            seen["url"] = url
+            seen["json"] = json
+            return httpx.Response(200, text="ok", request=httpx.Request("POST", url))
+
+    monkeypatch.setattr("app.main.httpx.AsyncClient", FakeClient)
+
+    asyncio.run(SlackPoster(settings)("*PaymentsApi5xxSpike* · critical"))
+
+    assert seen["json"] == {"text": "*PaymentsApi5xxSpike* · critical"}
+    assert seen["url"] == "https://hooks.slack.com/services/test"
